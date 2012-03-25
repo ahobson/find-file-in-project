@@ -4,9 +4,10 @@
 ;;   Phil Hagelberg, Doug Alcorn, and Will Farrington
 
 ;; Author: Phil Hagelberg, Doug Alcorn, and Will Farrington
+;; Modified by: Andrew Hobson
 ;; URL: http://www.emacswiki.org/cgi-bin/wiki/FindFileInProject
-;; Git: git://github.com/technomancy/find-file-in-project.git
-;; Version: 2.1
+;; Git: git://github.com/ahobson/find-file-in-project.git
+;; Version: 2.1+ahobson
 ;; Created: 2008-03-18
 ;; Keywords: project, convenience
 ;; EmacsWiki: FindFileInProject
@@ -83,6 +84,9 @@ Use this to exclude portions of your project: \"-not -regex \\\".*svn.*\\\"\".")
 
 This overrides variable `ffip-project-root' when set.")
 
+(defvar ffip-generate-files-function 'ffip-generate-project-files-with-find
+  "If non-nil, this function is called to generate the list of files in the project-root.")
+
 (defvar ffip-limit 512
   "Limit results to this many files.")
 
@@ -133,12 +137,17 @@ directory they are found in so that they are unique."
                                (ffip-uniqueify file-cons))
                              (add-to-list 'file-alist file-cons)
                              file-cons))
-                         (split-string (shell-command-to-string
-                                        (format "find %s -type f \\( %s \\) %s | head -n %s"
-                                                current-project-root
-                                                (ffip-join-patterns)
-                                                ffip-find-options
-                                                ffip-limit)))) ffip-project-file-cache))))
+                         (funcall ffip-generate-files-function current-project-root))
+                 ffip-project-file-cache))))
+
+(defun ffip-generate-project-files-with-find (project-root)
+  "Generate the list of files for the given project-root"
+  (split-string (shell-command-to-string
+                 (format "find %s -type f \\( %s \\) %s | head -n %s"
+                         project-root
+                         (ffip-join-patterns)
+                         ffip-find-options
+                         ffip-limit))))
 
 ;;;###autoload
 (defun find-file-in-project (&optional arg)
